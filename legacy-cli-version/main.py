@@ -3,6 +3,8 @@ import time
 import random
 from colorama import init, Fore, Style
 
+import grimoire_journal
+
 # Initialize colorama so colors work on all systems
 init(autoreset=True)
 
@@ -10,16 +12,17 @@ init(autoreset=True)
 # --- Helper functions ---
 def clear_screen():
     """clear the terminal screen"""
-    os, system("cls" if os.name == "nt" else "clear")
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def slow_print_center(text, delay=0.02, color=Fore.WHITE, width=50):
     """Print text centered with a little typewriter effect"""
     line = text.center(width)
-    for ch in line :
+    for ch in line:
         print(color + ch + Style.RESET_ALL, end="", flush=True)
         time.sleep(delay)
-        print() # newline at the end
+        print()  # newline at the end
+
 
 def sparkle_line(width=50):
     """
@@ -29,14 +32,15 @@ def sparkle_line(width=50):
     chars = []
 
     for _ in range(width):
-        if random.random() < 0.12: # ~12% chance to be a sparkle
+        if random.random() < 0.12:  # ~12% chance to be a sparkle
             chars.append(random.choice(sparkles))
         else:
             chars.append(" ")
     print(Fore.MAGENTA + "".join(chars) + Style.REST_ALL)
 
 
-#---Title screen ---
+# ---Title screen ---
+
 
 def show_title():
     clear_screen()
@@ -53,7 +57,7 @@ def show_title():
     slow_print_center("a Wispmire project", color=Fore.WHITE)
     slow_print_center("where healing meets the strange", color=Fore.MAGENTA)
 
-    #Bottom border
+    # Bottom border
     print(Fore.CYAN + border + Style.RESET_ALL)
     time.sleep(0.2)
 
@@ -62,13 +66,35 @@ def show_title():
         sparkle_line()
         time.sleep(0.25)
 
+
+# --- Main menu ---
+
+
+def show_main_menu():
+    print()
+    print(Fore.GREEN + "📖 Main Spellbook Menu" + Style.RESET_ALL)
+    print("1) Open Grimoire Journal")
+    # later: 2) Healing Brews (medications)
+    # later: 3) Wyrd Flow (spoons / energy)
+    # later: 4) Coven Contacts (doctors / therapists)
+    print("q) Quit")
+    print()
+
+
 def main():
     show_title()
-    print()
-    print("Welcome to your Spellbook. ✨")
-    print("This is your cozy starting point for Willow & Wyrd.")
-    print("Soon, this menu will lead to your Grimoire, Healing Brews,")
-    print("Wyrd Flow, Coven Contacts, and more.")
 
-if __name__ == "__main__";
-    main()
+    while True:
+        show_main_menu()
+        choice = input("Choose an option:").strip().lower()
+
+        if choice == "1":
+            grimoire_journal.run_grimoire()
+        elif choice == "q":
+            print("\nMay your Spoons return with the dawn. 🌙")
+        else:
+            print("That rune dosen't glow for you yet. Try again.")
+
+
+if __name__ == "--main--":
+    main
