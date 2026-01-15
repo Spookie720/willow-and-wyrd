@@ -1,6 +1,4 @@
-/* index.css */
-/* Global baseline styles only */
-
+/* index.css — global baseline only */
 *,
 *::before,
 *::after {
@@ -44,6 +42,6 @@ button {
 }
 
 a {
-  text-decoration: none;
   color: inherit;
+  text-decoration: none;
 }

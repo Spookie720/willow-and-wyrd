@@ -1,117 +1,177 @@
 import React, { useMemo, useState } from "react";
 
-type BrewEntry = {
+type Med = {
     id: string;
-    createdAt: string; // ISO
-    mood: number; // 1-10
-    energy: number; // 1-10
-    notes: string;
+    name: string;
+    dose: string;
+    time: "morning" | "midday" | "evening" | "night";
+    color: "green" | "purple" | "amber";
+};
+
+type DoseLog = {
+    id: string;
+    medId: string;
+    status: "taken" | "skipped" | "missed";
+    at: string;
 };
 
 export default function HealingBrew() {
-    const [mood, setMood] = useState<number>(5);
-    const [energy, setEnergy] = useState<number>(5);
-    const [notes, setNotes] = useState<string>("");
-    const [entries, setEntries] = useState<BrewEntry[]>([]);
+    const [meds, setMeds] = useState<Med[]>([
+        { id: crypto.randomUUID(), name: "Estradiol", dose: "2mg", time: "morning", color: "purple" },
+        { id: crypto.randomUUID(), name: "Spironolactone", dose: "50mg", time: "evening", color: "green" },
+    ]);
+    const [logs, setLogs] = useState<DoseLog[]>([]);
+    const [name, setName] = useState("");
+    const [dose, setDose] = useState("");
+    const [time, setTime] = useState<Med["time"]>("morning");
+    const [color, setColor] = useState<Med["color"]>("green");
 
-    const canSave = useMemo(() => notes.trim().length > 0, [notes]);
+    const brewLevel = useMemo(() => {
+        const taken = logs.filter((l) => l.status === "taken").length;
+        return Math.min(100, taken * 10 + meds.length * 5);
+    }, [logs, meds]);
 
-    const onSave = () => {
-        if (!canSave) return;
-        const now = new Date().toISOString();
-        const entry: BrewEntry = {
-            id: crypto.randomUUID(),
-            createdAt: now,
-            mood,
-            energy,
-            notes: notes.trim(),
-        };
-        setEntries((prev) => [entry, ...prev]);
-        setNotes("");
-        setMood(5);
-        setEnergy(5);
+    const ingredients = useMemo(() => {
+        // ingredients appear as meds + “taken” sparks
+        const base = meds.map((m) => ({ key: m.id, label: `${m.name} ${m.dose}`, color: m.color }));
+        const sparks = logs
+            .filter((l) => l.status === "taken")
+            .slice(0, 8)
+            .map((l, idx) => ({ key: `${l.id}-${idx}`, label: "dose", color: "teal" as any }));
+        return [...base, ...sparks];
+    }, [meds, logs]);
+
+    const addMed = () => {
+        const n = name.trim();
+        const d = dose.trim();
+        if (!n || !d) return;
+        setMeds((prev) => [
+            { id: crypto.randomUUID(), name: n, dose: d, time, color },
+            ...prev,
+        ]);
+        setName("");
+        setDose("");
+        setTime("morning");
+        setColor("green");
+    };
+
+    const logDose = (medId: string, status: DoseLog["status"]) => {
+        setLogs((prev) => [
+            { id: crypto.randomUUID(), medId, status, at: new Date().toISOString() },
+            ...prev,
+        ]);
     };
 
     return (
-        <div className="row" style={{ alignItems: "flex-start" }}>
-            <section className="card" style={{ flex: 1, minWidth: 320 }}>
-                <h3>Today’s Brew</h3>
+        <div className="row">
+            <div className="col">
+                <div className="card">
+                    <div className="h2">The Cauldron</div>
+                    <div className="small">Add meds = ingredients. Logging doses makes the brew glow.</div>
 
-                <div className="row">
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                        <label htmlFor="mood">Mood (1–10)</label>
-                        <input
-                            id="mood"
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={mood}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setMood(clampInt(e.target.value, 1, 10))
-                            }
-                        />
+                    <div className="cauldron-stage">
+                        <div className="cauldron-ring" aria-hidden="true" />
+                        <div className="cauldron" aria-label="Animated cauldron">
+                            <div className="brew" style={{ height: `${brewLevel}%` }} />
+                            {ingredients.slice(0, 14).map((ing, i) => (
+                                <span
+                                    key={ing.key}
+                                    className={`ingredient ig-${i % 8} c-${ing.color}`}
+                                    title={ing.label}
+                                />
+                            ))}
+                        </div>
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 140 }}>
-                        <label htmlFor="energy">Energy (1–10)</label>
-                        <input
-                            id="energy"
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={energy}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                setEnergy(clampInt(e.target.value, 1, 10))
-                            }
-                        />
+                    <div className="divider" />
+
+                    <div className="h2">Add ingredient</div>
+                    <label>Name</label>
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Sertraline" />
+                    <label>Dose</label>
+                    <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="e.g., 25mg" />
+
+                    <div className="row">
+                        <div className="col" style={{ minWidth: 180 }}>
+                            <label>Time</label>
+                            <select value={time} onChange={(e) => setTime(e.target.value as Med["time"])}>
+                                <option value="morning">morning</option>
+                                <option value="midday">midday</option>
+                                <option value="evening">evening</option>
+                                <option value="night">night</option>
+                            </select>
+                        </div>
+                        <div className="col" style={{ minWidth: 180 }}>
+                            <label>Essence</label>
+                            <select value={color} onChange={(e) => setColor(e.target.value as Med["color"])}>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="amber">amber</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="row" style={{ marginTop: 10 }}>
+                        <button className="btn primary" onClick={addMed} disabled={!name.trim() || !dose.trim()}>
+                            Add to brew
+                        </button>
+                        <span className="small">Later: wire to API.</span>
                     </div>
                 </div>
+            </div>
 
-                <div style={{ marginTop: 12 }}>
-                    <label htmlFor="notes">Notes</label>
-                    <textarea
-                        id="notes"
-                        value={notes}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
-                        placeholder="What’s true today? What would help?"
-                    />
+            <div className="col">
+                <div className="card">
+                    <div className="h2">Your Ingredients</div>
+                    <div className="small">Mark doses — the cauldron brightens.</div>
+
+                    {meds.length === 0 ? (
+                        <p className="small">No meds yet.</p>
+                    ) : (
+                        <ul className="brew-list">
+                            {meds.map((m) => (
+                                <li key={m.id} className="brew-item">
+                                    <div>
+                                        <div className="brew-name">
+                                            <span className={`dot-essence c-${m.color}`} aria-hidden="true" />
+                                            {m.name} <span className="muted">({m.dose})</span>
+                                        </div>
+                                        <div className="small">Time: <span className="badge purple">{m.time}</span></div>
+                                    </div>
+
+                                    <div className="brew-actions">
+                                        <button className="btn primary" onClick={() => logDose(m.id, "taken")}>Taken</button>
+                                        <button className="btn" onClick={() => logDose(m.id, "skipped")}>Skipped</button>
+                                        <button className="btn danger" onClick={() => logDose(m.id, "missed")}>Missed</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <div className="divider" />
+
+                    <div className="h2">Recent Dose Logs</div>
+                    {logs.length === 0 ? (
+                        <p className="small">No logs yet. Start with one.</p>
+                    ) : (
+                        <ul className="log-list">
+                            {logs.slice(0, 8).map((l) => {
+                                const med = meds.find((m) => m.id === l.medId);
+                                return (
+                                    <li key={l.id} className="log-item">
+                                        <span className={`badge ${l.status === "taken" ? "green" : l.status === "skipped" ? "purple" : "amber"}`}>
+                                            {l.status}
+                                        </span>
+                                        <span className="muted">{med ? med.name : "Unknown"}</span>
+                                        <span className="small">{new Date(l.at).toLocaleString()}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </div>
-
-                <div className="row" style={{ marginTop: 12 }}>
-                    <button className="primary" onClick={onSave} disabled={!canSave}>
-                        Save
-                    </button>
-                    <span className="small">Saved entries are local for now (until wired to API).</span>
-                </div>
-            </section>
-
-            <section className="card" style={{ flex: 1, minWidth: 320 }}>
-                <h3>Recent Brews</h3>
-                {entries.length === 0 ? (
-                    <p className="small">No entries yet. Your first one can be small.</p>
-                ) : (
-                    <ul className="list">
-                        {entries.map((e) => (
-                            <li key={e.id}>
-                                <div>
-                                    <div className="small">{new Date(e.createdAt).toLocaleString()}</div>
-                                    <div style={{ marginTop: 6 }}>{e.notes}</div>
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                    <span className="badge ok">Mood: {e.mood}</span>
-                                    <span className="badge warn">Energy: {e.energy}</span>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
+            </div>
         </div>
     );
-}
-
-function clampInt(value: string, min: number, max: number): number {
-    const n = Number.parseInt(value, 10);
-    if (Number.isNaN(n)) return min;
-    return Math.max(min, Math.min(max, n));
 }

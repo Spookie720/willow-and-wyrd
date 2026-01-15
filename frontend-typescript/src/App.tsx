@@ -1,80 +1,98 @@
 import React, { useMemo, useState } from "react";
-import HealingBrew from "./components/healingbrew";
-import Journal from "./components/journal";
-import SpellsTodo from "./components/spellstodo";
-import WyrdFlow from "./components/wyrdflow";
+import Home from "./components/Home";
+import HealingBrew from "./components/HealingBrews";
+import Journal from "./components/Journal";
+import SpellsTodo from "./components/SpellsTodo";
+import WyrdFlow from "./components/WyrdFlow";
+import MascotFlame from "./components/MascotFlame";
 
-type TabKey = "healingbrew" | "journal" | "todo" | "wyrdflow";
+type TabKey = "home" | "brew" | "journal" | "todo" | "wyrdflow";
 
 export default function App() {
-  const [tab, setTab] = useState<TabKey>("healingbrew");
-
+  const [tab, setTab] = useState<TabKey>("home");
   const title = useMemo(() => {
     switch (tab) {
-      case "healingbrew":
+      case "home":
+        return "Cottage Hearth";
+      case "brew":
         return "HealingBrew";
       case "journal":
-        return "Journal";
+        return "Journal Scroll";
       case "todo":
         return "Spells.todo";
       case "wyrdflow":
-        return "WyrdFlow";
+        return "WyrdFlow + Spoons";
       default:
-        return "App";
+        return "Willow & Wyrd";
     }
   }, [tab]);
 
   return (
-    <div className="app">
-      <header className="app-header">
+    <div className="app-shell">
+      <header className="topbar">
         <div className="brand">
-          <h1>Willow & Wyrd</h1>
-          <p className="subtitle">gentle tools for hard days</p>
+          <div className="sigil" aria-hidden="true" />
+          <div>
+            <div className="brand-title">Willow &amp; Wyrd</div>
+            <div className="brand-subtitle">dark cottage tools for soft survival</div>
+          </div>
         </div>
 
-        <nav className="tabs" aria-label="Primary navigation">
-          <TabButton active={tab === "healingbrew"} onClick={() => setTab("healingbrew")}>
-            HealingBrew
-          </TabButton>
-          <TabButton active={tab === "journal"} onClick={() => setTab("journal")}>
-            Journal
-          </TabButton>
-          <TabButton active={tab === "todo"} onClick={() => setTab("todo")}>
-            Spells.todo
-          </TabButton>
-          <TabButton active={tab === "wyrdflow"} onClick={() => setTab("wyrdflow")}>
-            WyrdFlow
-          </TabButton>
+        <nav className="nav">
+          <NavButton active={tab === "home"} onClick={() => setTab("home")}>Home</NavButton>
+          <NavButton active={tab === "brew"} onClick={() => setTab("brew")}>HealingBrew</NavButton>
+          <NavButton active={tab === "journal"} onClick={() => setTab("journal")}>Journal</NavButton>
+          <NavButton active={tab === "todo"} onClick={() => setTab("todo")}>Spells.todo</NavButton>
+          <NavButton active={tab === "wyrdflow"} onClick={() => setTab("wyrdflow")}>WyrdFlow</NavButton>
         </nav>
+
+        <div className="topbar-right">
+          <div className="page-title">{title}</div>
+        </div>
       </header>
 
-      <main className="app-main">
-        <div className="panel">
-          <h2 className="panel-title">{title}</h2>
+      <main className="stage">
+        <div className="glow-orb orb-1" aria-hidden="true" />
+        <div className="glow-orb orb-2" aria-hidden="true" />
 
-          {tab === "healingbrew" && <HealingBrew />}
+        <section className="panel">
+          {tab === "home" && <Home onNavigate={setTab} />}
+          {tab === "brew" && <HealingBrew />}
           {tab === "journal" && <Journal />}
           {tab === "todo" && <SpellsTodo />}
           {tab === "wyrdflow" && <WyrdFlow />}
-        </div>
+        </section>
+
+        <MascotFlame
+          mood={tab === "home" ? "welcome" : tab === "brew" ? "brew" : tab === "journal" ? "scroll" : tab === "todo" ? "grimoire" : "moonstone"}
+          hint={
+            tab === "brew"
+              ? "Add a dose — watch the cauldron fill."
+              : tab === "journal"
+                ? "Unroll the scroll. Say one true thing."
+                : tab === "todo"
+                  ? "Write a spell. Finish one small ingredient."
+                  : tab === "wyrdflow"
+                    ? "Count your moonstones. Spend them gently."
+                    : "You made it. That counts."
+          }
+        />
       </main>
 
-      <footer className="app-footer">
-        <small>© {new Date().getFullYear()} Willow & Wyrd</small>
+      <footer className="footer">
+        <span>© {new Date().getFullYear()} Willow &amp; Wyrd</span>
+        <span className="dot" />
+        <span className="muted">Local-only demo UI (ready to wire to API)</span>
       </footer>
     </div>
   );
 }
 
-function TabButton(props: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function NavButton(props: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
-      className={`tab ${props.active ? "active" : ""}`}
+      className={`nav-btn ${props.active ? "active" : ""}`}
       onClick={props.onClick}
     >
       {props.children}
