@@ -1,55 +1,54 @@
-# app/meds.py
-from typing import List
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
-from .db import get_session
-from .models import Medication
+from database import get_db
+from models import Medication, DoseLog
+from schemas import MedicationCreate, MedicationOut, DoseLogCreate, DoseLogOut
 
-router = APIRouter(prefix="/meds", tags=["medications"])
-
-
-@router.get("/", response_model=List[Medication])
-def list_meds(session: Session = Depends(get_session)):
-    """
-    Return all medications (healing brews).
-    """
-    statement = select(Medication).order_by(Medication.name)
-    return session.exec(statement).all()
+router = APIRouter(prefix="/api/meds", tags=["meds"])
 
 
-@router.post("/", response_model=Medication, status_code=201)
-def create_med(med: Medication, session: Session = Depends(get_session)):
-    """
-    Add a medication to the Potion Cabinet.
-    """
-    if not med.name:
-        raise HTTPException(status_code=400, detail="Potion name is required.")
+@router.get("", response_model=list[MedicationOut])
+def list_meds(db: Session = Depends(get_db)):
+    meds = db.scalars(select(Medication).order_by(Medication.created_at.desc())).all()
+    return meds
 
-    new_med = Medication(
-        name=med.name,
-        dosage=med.dosage,
-        schedule=med.schedule,
-        notes=med.notes,
-        is_active=True if med.is_active is None else med.is_active,
+
+@router.post("", response_model=MedicationOut)
+def create_med(payload: MedicationCreate, db: Session = Depends(get_db)):
+    med = Medication(
+        name=payload.name,
+        dose=payload.dose,
+        time=payload.time,
+        color=payload.color,
+        active=True,
     )
-    session.add(new_med)
-    session.commit()
-    session.refresh(new_med)
-    return new_med
-
-
-@router.patch("/{med_id}/toggle", response_model=Medication)
-def toggle_med(med_id: int, session: Session = Depends(get_session)):
-    """
-    Toggle a med between active/paused.
-    """
-    med = session.get(Medication, med_id)
-    if not med:
-        raise HTTPException(status_code=404, detail="Potion not found.")
-
-    med.is_active = not med.is_active
-    session.add(med)
-    session.commit()
-    session.refresh(med)
+    db.add(med)
+    db.commit()
+    db.refresh(med)
     return med
+
+
+@router.post("/{med_id}/dose", response_model=DoseLogOut)
+def log_dose(med_id: str, payload: DoseLogCreate, db: Session = Depends(get_db)):
+    med = db.get(Medication, med_id)
+    if not med:
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    if payload.status not in {"taken", "skipped", "missed"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    log = DoseLog(medication_id=med_id, status=payload.status, notes=payload.notes)
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+@router.get("/logs", response_model=list[DoseLogOut])
+def list_logs(db: Session = Depends(get_db)):
+    logs = db.scalars(select(DoseLog).order_by(DoseLog.taken_at.desc())).all()
+    return logs

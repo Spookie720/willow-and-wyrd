@@ -1,11 +1,30 @@
-# app/database.py
-"""
-Compatibility shim.
+from __future__ import annotations
 
-Some code or tools may expect `database.py` with engine/init_db/get_session.
-We delegate to app.db to keep a single source of truth.
-"""
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-from .db import engine, init_db, get_session
+# Default to your docker compose DB
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg://postgres:postgres@localhost:5432/sproutlog",
+)
 
-__all__ = ["engine", "init_db", "get_session"]
+engine = create_engine(DATABASE_URL, echo=False)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db():
+    """
+    FastAPI dependency that yields a SQLAlchemy session and closes it safely.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

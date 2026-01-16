@@ -1,30 +1,60 @@
-# app/journal.py
-from typing import List
-from fastapi import APIRouter, Depends
-from sqlmodel import Session, select
+from __future__ import annotations
 
-from .db import get_session
-from .models import JournalEntry
+from datetime import date as date_type
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
-router = APIRouter(prefix="/journal", tags=["journal"])
+from database import get_db
+from models import JournalEntry
+from schemas import JournalCreate, JournalOut
 
-
-@router.get("/", response_model=List[JournalEntry])
-def list_entries(session: Session = Depends(get_session)):
-    """
-    Return all journal entries, newest first.
-    """
-    statement = select(JournalEntry).order_by(JournalEntry.timestamp.desc())
-    return session.exec(statement).all()
+router = APIRouter(prefix="/api/journal", tags=["journal"])
 
 
-@router.post("/", response_model=JournalEntry, status_code=201)
-def create_entry(entry: JournalEntry, session: Session = Depends(get_session)):
-    """
-    Create a new journal entry.
-    """
-    new_entry = JournalEntry(mood=entry.mood, text=entry.text)
-    session.add(new_entry)
-    session.commit()
-    session.refresh(new_entry)
-    return new_entry
+@router.get("", response_model=list[JournalOut])
+def list_entries(db: Session = Depends(get_db)):
+    entries = db.scalars(
+        select(JournalEntry).order_by(JournalEntry.created_at.desc())
+    ).all()
+    return [_to_out(e) for e in entries]
+
+
+@router.post("", response_model=JournalOut)
+def create_entry(payload: JournalCreate, db: Session = Depends(get_db)):
+    tags_str = ",".join(payload.tags) if payload.tags else ""
+    entry = JournalEntry(
+        title=payload.title,
+        body=payload.body,
+        entry_type=payload.entry_type,
+        tags=tags_str,
+        entry_date=payload.entry_date or date_type.today(),
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return _to_out(entry)
+
+
+@router.delete("/{entry_id}")
+def delete_entry(entry_id: str, db: Session = Depends(get_db)):
+    entry = db.get(JournalEntry, entry_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(entry)
+    db.commit()
+    return {"ok": True}
+
+
+def _to_out(e: JournalEntry) -> JournalOut:
+    tags = [t.strip() for t in (e.tags or "").split(",") if t.strip()]
+    return JournalOut(
+        id=e.id,
+        title=e.title,
+        body=e.body,
+        entry_type=e.entry_type,
+        tags=tags,
+        entry_date=e.entry_date,
+        created_at=e.created_at,
+        updated_at=e.updated_at,
+    )

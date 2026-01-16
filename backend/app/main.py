@@ -1,22 +1,26 @@
-# app/main.py
-from . import journal
+from __future__ import annotations
+
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .db import init_db
-from .. import meds, todos, spoons
+from database import engine, Base
+import meds
+import journal
+import todo
+import spoons
 
-app = FastAPI(
-    title="Willow & Wyrd API",
-    description="Backend for the cozy witchy mental health app.",
-    version="0.1.0",
+# Create tables (simple dev mode; later you'll switch to Alembic migrations)
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="Willow & Wyrd API")
+
+# CORS for Vite/React dev servers
+# Set FRONTEND_ORIGINS="http://localhost:5173,http://localhost:3000"
+origins_env = os.getenv(
+    "FRONTEND_ORIGINS", "http://localhost:5173,http://localhost:3000"
 )
-
-# Allow frontend (React) to connect
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
+origins = [o.strip() for o in origins_env.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,19 +30,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
-
-
-# Register routers
-app.include_router(journal.router)
 app.include_router(meds.router)
-app.include_router(todos.router)
+app.include_router(journal.router)
+app.include_router(todo.router)
 app.include_router(spoons.router)
 
 
-@app.get("/")
-def root():
-    return {"message": "🌿 Willow & Wyrd API – a Wispmire project"}
+@app.get("/api/health")
+def health():
+    return {"ok": True}
