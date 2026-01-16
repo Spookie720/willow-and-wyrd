@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from "react";
+import { PotionIcon } from "./Icons";
+
 
 type SpoonEvent = {
     id: string;

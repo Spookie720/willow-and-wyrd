@@ -1,4 +1,7 @@
 import React, { useMemo, useState } from "react";
+import { PotionIcon } from "./Icons";
+
+
 
 type Med = {
     id: string;
@@ -66,7 +69,11 @@ export default function HealingBrew() {
         <div className="row">
             <div className="col">
                 <div className="card">
-                    <div className="h2">The Cauldron</div>
+                    <div className="h2 feature-title">
+                        <PotionIcon size={22} />
+                        The Cauldron
+                    </div>
+
                     <div className="small">Add meds = ingredients. Logging doses makes the brew glow.</div>
 
                     <div className="cauldron-stage">

@@ -1,4 +1,5 @@
 import React from "react";
+import { FlameSprite } from "./Icons";
 
 type Mood = "welcome" | "brew" | "scroll" | "grimoire" | "moonstone";
 
@@ -15,22 +16,15 @@ export default function MascotFlame(props: { mood: Mood; hint: string }) {
                         : "Hearthflame";
 
     return (
-        <aside className={`flame-wrap mood-${props.mood}`} aria-label="Mascot helper">
-            <div className="flame-bubble">
-                <div className="flame-name">{label}</div>
-                <div className="flame-hint">{props.hint}</div>
+        <aside className={`mascot mood-${props.mood}`} aria-label="Flame familiar helper">
+            <div className="mascot-bubble">
+                <div className="mascot-name">{label}</div>
+                <div className="mascot-hint">{props.hint}</div>
             </div>
 
-            <div className="flame" aria-hidden="true">
-                <div className="flame-core" />
-                <div className="flame-eye left" />
-                <div className="flame-eye right" />
-                <div className="flame-mouth" />
-                <div className="flame-spark s1" />
-                <div className="flame-spark s2" />
+            <div className="mascot-flame" aria-hidden="true">
+                <FlameSprite mood={props.mood} size={52} />
             </div>
         </aside>
     );
 }
-
-/* CSS lives in feature components? We'll place in App.css via global class names below */
